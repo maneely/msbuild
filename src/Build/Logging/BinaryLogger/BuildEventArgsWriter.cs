@@ -84,6 +84,18 @@ namespace Microsoft.Build.Logging
             {
                 Write((ProjectEvaluationFinishedEventArgs)e);
             }
+            else if (e is PropertyReassignmentEventArgs)
+            {
+                Write((PropertyReassignmentEventArgs)e);
+            }
+            else if (e is UninitializedPropertyReadEventArgs)
+            {
+                Write((UninitializedPropertyReadEventArgs)e);
+            }
+            else if (e is EnvironmentVariableReadEventArgs)
+            {
+                Write((EnvironmentVariableReadEventArgs)e);
+            }
             else
             {
                 // convert all unrecognized objects to message
