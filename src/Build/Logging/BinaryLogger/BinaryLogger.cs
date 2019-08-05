@@ -32,7 +32,7 @@ namespace Microsoft.Build.Logging
         // version 7:
         //   - Include ProjectStartedEventArgs.GlobalProperties
         // version 8:
-        //   - new record kinds: EnvironmentVariableRead, PropertyReassignment, UninitializedPropertyRead
+        //   - new record kinds: EnvironmentVariableRead, PropertyReassignment, UninitializedPropertyRead, SdkResolverDoesNotTrackEnvironmentVariables
         internal const int FileFormatVersion = 8;
 
         private Stream stream;
