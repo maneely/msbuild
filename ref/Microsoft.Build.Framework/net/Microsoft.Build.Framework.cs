@@ -484,6 +484,14 @@ namespace Microsoft.Build.Framework
         public virtual string ProjectFilePath { get { throw null; } protected set { } }
         public virtual string SolutionFilePath { get { throw null; } protected set { } }
         public virtual object State { get { throw null; } set { } }
+        public virtual string GetEnvironmentVariableValue(string name) { throw null; }
+        public virtual string GetGlobalPropertyValue(string name) { throw null; }
+    }
+    public partial class SdkResolverDoesNotTrackEnvironmentVariablesEventArgs : Microsoft.Build.Framework.BuildMessageEventArgs
+    {
+        public SdkResolverDoesNotTrackEnvironmentVariablesEventArgs() { }
+        public SdkResolverDoesNotTrackEnvironmentVariablesEventArgs(string sdkResolverName, string message, string helpKeyword=null, string senderName=null, Microsoft.Build.Framework.MessageImportance importance=(Microsoft.Build.Framework.MessageImportance)(2)) { }
+        public string SdkResolverName { get { throw null; } set { } }
     }
     public abstract partial class SdkResult
     {
@@ -491,6 +499,7 @@ namespace Microsoft.Build.Framework
         public virtual string Path { get { throw null; } protected set { } }
         public virtual Microsoft.Build.Framework.SdkReference SdkReference { get { throw null; } protected set { } }
         public virtual bool Success { get { throw null; } protected set { } }
+        public virtual bool TrackEnvironmentVariables { get { throw null; } set { } }
         public virtual string Version { get { throw null; } protected set { } }
     }
     public abstract partial class SdkResultFactory

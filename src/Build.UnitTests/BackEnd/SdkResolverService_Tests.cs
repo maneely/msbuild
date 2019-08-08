@@ -40,7 +40,7 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
 
             SdkReference sdk = new SdkReference("notfound", "referencedVersion", "minimumVersion");
 
-            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false);
+            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null);
 
             result.Success.ShouldBeFalse();
             result.ShouldNotBeNull();
@@ -73,7 +73,7 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
                             ))
                 });
 
-            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false);
+            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null);
 
             result.Path.ShouldBe("path");
 
@@ -88,7 +88,7 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
 
             SdkReference sdk = new SdkReference("1sdkName", "version1", "minimumVersion");
 
-            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false);
+            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null);
 
             result.Path.ShouldBe("resolverpath1");
             _logger.Warnings.Select(i => i.Message).ShouldBe(new [] { "The SDK resolver \"MockSdkResolverThrows\" failed to run. EXMESSAGE" });
@@ -101,7 +101,7 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
 
             SdkReference sdk = new SdkReference("1sdkName", "referencedVersion", "minimumVersion");
 
-            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false);
+            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null);
 
             result.Path.ShouldBe("resolverpath1");
             _logger.BuildMessageEvents.Select(i => i.Message).ShouldContain("MockSdkResolver1 running");
@@ -116,7 +116,7 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
             // be logged because MockSdkResolver2 will succeed.
             SdkReference sdk = new SdkReference("2sdkName", "version2", "minimumVersion");
 
-            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false);
+            var result = SdkResolverService.Instance.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null);
 
             result.Path.ShouldBe("resolverpath2");
 
@@ -139,10 +139,10 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
             SdkReference sdk = new SdkReference("othersdk", "1.0", "minimumVersion");
 
             // First call should not know state
-            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false).Path.ShouldBe("resolverpath");
+            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null).Path.ShouldBe("resolverpath");
 
             // Second call should have received state
-            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false).Path.ShouldBe(MockSdkResolverWithState.Expected);
+            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null).Path.ShouldBe(MockSdkResolverWithState.Expected);
         }
 
         [Fact]
@@ -155,10 +155,10 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
             SdkReference sdk = new SdkReference("othersdk", "1.0", "minimumVersion");
 
             // First call should not know state
-            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false).Path.ShouldBe("resolverpath");
+            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null).Path.ShouldBe("resolverpath");
 
             // Second call should have received state
-            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false).Path.ShouldBe("resolverpath");
+            SdkResolverService.Instance.ResolveSdk(submissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null).Path.ShouldBe("resolverpath");
         }
 
         [Theory]
@@ -199,13 +199,13 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
                     resolver
                 });
 
-            var result = service.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false);
+            var result = service.ResolveSdk(BuildEventContext.InvalidSubmissionId, sdk, _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null);
             resolver.ResolvedCalls.Count.ShouldBe(1);
             result.Path.ShouldBe("path");
             result.Version.ShouldBe("1.0.0");
             _logger.WarningCount.ShouldBe(0);
 
-            result = service.ResolveSdk(BuildEventContext.InvalidSubmissionId, new SdkReference("foo", "2.0.0", null), _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false);
+            result = service.ResolveSdk(BuildEventContext.InvalidSubmissionId, new SdkReference("foo", "2.0.0", null), _loggingContext, new MockElementLocation("file"), "sln", "projectPath", interactive: false, globalProperties: null);
             resolver.ResolvedCalls.Count.ShouldBe(1);
             result.Path.ShouldBe("path");
             result.Version.ShouldBe("1.0.0");
@@ -243,9 +243,149 @@ namespace Microsoft.Build.Engine.UnitTests.BackEnd
                 "sln",
                 "projectPath",
                 // Pass along interactive and expect it to be received in the SdkResolverContext
-                interactive: true);
+                interactive: true,
+                globalProperties: null);
 
             interactive.ShouldBeTrue();
+        }
+
+        [Fact]
+        public void GlobalPropertiesAreAvailableToSdkResolvers()
+        {
+            const string propertyName = "Foo";
+            const string expected = "ValueA";
+            string actual = null;
+            var service = new CachingSdkResolverService();
+
+            service.InitializeForTests(
+                resolvers: new List<SdkResolver>
+                {
+                    new SdkUtilities.ConfigurableMockSdkResolver((sdkReference, resolverContext, factory) =>
+                    {
+                        actual = resolverContext.GetGlobalPropertyValue(propertyName);
+
+                        return null;
+                    })
+                });
+
+            service.ResolveSdk(
+                BuildEventContext.InvalidSubmissionId,
+                new SdkReference("foo", "1.0.0", null),
+                _loggingContext,
+                new MockElementLocation("file"),
+                "sln",
+                "projectPath",
+                // Pass along interactive and expect it to be received in the SdkResolverContext
+                interactive: true,
+                globalProperties: new Dictionary<string, string>
+                {
+                    [propertyName] = expected
+                });
+
+            actual.ShouldBe(expected);
+        }
+
+        [Fact]
+        public void NonExistentGlobalPropertyReturnsEmptyString()
+        {
+            string actual = null;
+            var service = new CachingSdkResolverService();
+
+            service.InitializeForTests(
+                resolvers: new List<SdkResolver>
+                {
+                    new SdkUtilities.ConfigurableMockSdkResolver((sdkRference, resolverContext, factory) =>
+                    {
+                        actual = resolverContext.GetGlobalPropertyValue("Anything");
+
+                        return null;
+                    })
+                });
+
+            service.ResolveSdk(
+                BuildEventContext.InvalidSubmissionId,
+                new SdkReference("foo", "1.0.0", null),
+                _loggingContext,
+                new MockElementLocation("file"),
+                "sln",
+                "projectPath",
+                // Pass along interactive and expect it to be received in the SdkResolverContext
+                interactive: true,
+                globalProperties: null);
+
+            actual.ShouldBe(string.Empty);
+        }
+
+        [Fact]
+        public void EnvironmentVariablesAvailableViaSdkResolverContext()
+        {
+            using (TestEnvironment env = TestEnvironment.Create())
+            {
+                string envVarName = Guid.NewGuid().ToString();
+                string envVarValue = Guid.NewGuid().ToString();
+                string actual = null;
+                var service = new CachingSdkResolverService();
+
+                env.SetEnvironmentVariable(envVarName, envVarValue);
+
+                service.InitializeForTests(
+                    resolvers: new List<SdkResolver>
+                    {
+                        new SdkUtilities.ConfigurableMockSdkResolver((sdkRference, resolverContext, factory) =>
+                        {
+                            actual = resolverContext.GetEnvironmentVariableValue(envVarName);
+
+                            return null;
+                        })
+                    });
+
+                service.ResolveSdk(
+                    BuildEventContext.InvalidSubmissionId,
+                    new SdkReference("foo", "1.0.0", null),
+                    _loggingContext,
+                    new MockElementLocation("file"),
+                    "sln",
+                    "projectPath",
+                    // Pass along interactive and expect it to be received in the SdkResolverContext
+                    interactive: true,
+                    globalProperties: null);
+
+                actual.ShouldBe(envVarValue);
+            }
+        }
+
+        [Fact]
+        public void NonExistentEnvironmentVariableIsReturned()
+        {
+            using (TestEnvironment env = TestEnvironment.Create())
+            {
+                string actual = null;
+                var service = new CachingSdkResolverService();
+
+                service.InitializeForTests(
+                    resolvers: new List<SdkResolver>
+                    {
+                        new SdkUtilities.ConfigurableMockSdkResolver((sdkRference, resolverContext, factory) =>
+                        {
+                            actual = resolverContext.GetEnvironmentVariableValue(Guid.NewGuid().ToString());
+
+                            return null;
+                        })
+                    });
+
+                service.ResolveSdk(
+                    BuildEventContext.InvalidSubmissionId,
+                    new SdkReference("foo", "1.0.0", null),
+                    _loggingContext,
+                    new MockElementLocation("file"),
+                    "sln",
+                    "projectPath",
+                    // Pass along interactive and expect it to be received in the SdkResolverContext
+                    interactive: true,
+                    globalProperties: null);
+
+                actual.ShouldBe(string.Empty);
+            }
         }
 
         private class MockLoaderStrategy : SdkResolverLoader

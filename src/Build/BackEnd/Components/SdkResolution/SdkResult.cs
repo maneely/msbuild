@@ -15,27 +15,30 @@ namespace Microsoft.Build.BackEnd.SdkResolution
     {
         private string _path;
         private string _version;
+        private bool _trackEnvironmentVariables;
 
         public SdkResult(ITranslator translator)
         {
             Translate(translator);
         }
 
-        public SdkResult(SdkReference sdkReference, IEnumerable<string> errors, IEnumerable<string> warnings)
+        public SdkResult(SdkReference sdkReference, IEnumerable<string> errors, IEnumerable<string> warnings, bool trackEnvironmentVariables = true)
         {
             Success = false;
             SdkReference = sdkReference;
             Errors = errors;
             Warnings = warnings;
+            TrackEnvironmentVariables = trackEnvironmentVariables;
         }
 
-        public SdkResult(SdkReference sdkReference, string path, string version, IEnumerable<string> warnings)
+        public SdkResult(SdkReference sdkReference, string path, string version, IEnumerable<string> warnings, bool trackEnvironmentVariables = true)
         {
             Success = true;
             SdkReference = sdkReference;
             _path = path;
             _version = version;
             Warnings = warnings;
+            TrackEnvironmentVariables = trackEnvironmentVariables;
         }
 
         public SdkResult()
@@ -52,11 +55,15 @@ namespace Microsoft.Build.BackEnd.SdkResolution
 
         public override string Version => _version;
 
+        public override bool TrackEnvironmentVariables { get => _trackEnvironmentVariables; set => _trackEnvironmentVariables = value; }
+
         public IEnumerable<string> Warnings { get; }
+
         public void Translate(ITranslator translator)
         {
             translator.Translate(ref _path);
             translator.Translate(ref _version);
+            translator.Translate(ref _trackEnvironmentVariables);
         }
 
         public NodePacketType Type => NodePacketType.ResolveSdkResponse;

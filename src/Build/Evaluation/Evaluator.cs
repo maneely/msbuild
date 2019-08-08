@@ -180,6 +180,8 @@ namespace Microsoft.Build.Evaluation
 
         private readonly bool _interactive;
 
+        private static Dictionary<string, string> _globalPropertiesForSdkResolution;
+
         /// <summary>
         /// Private constructor called by the static Evaluate method.
         /// </summary>
@@ -622,8 +624,6 @@ namespace Microsoft.Build.Evaluation
 
                 _logProjectImportedEvents = Traits.Instance.EscapeHatches.LogProjectImports;
 
-                ICollection<P> globalProperties;
-
                 using (_evaluationProfiler.TrackPass(EvaluationPass.InitialProperties))
                 {
                     // Pass0: load initial properties
@@ -631,7 +631,7 @@ namespace Microsoft.Build.Evaluation
                     AddBuiltInProperties();
                     AddEnvironmentProperties();
                     AddToolsetProperties();
-                    globalProperties = AddGlobalProperties();
+                    AddGlobalProperties();
 
                     if (_interactive)
                     {
@@ -821,7 +821,15 @@ namespace Microsoft.Build.Evaluation
 
                             string line = new string('#', 100) + "\n";
 
-                            string output = String.Format(CultureInfo.CurrentUICulture, "###: MSBUILD: Evaluating or reevaluating project {0} with {1} global properties and {2} tools version, child count {3}, CurrentSolutionConfigurationContents hash {4} other properties:\n{5}", _projectRootElement.FullPath, globalProperties.Count, _data.Toolset.ToolsVersion, _projectRootElement.Count, hash, propertyDump);
+                            string output = String.Format(
+                                CultureInfo.CurrentUICulture,
+                                "###: MSBUILD: Evaluating or reevaluating project {0} with {1} global properties and {2} tools version, child count {3}, CurrentSolutionConfigurationContents hash {4} other properties:\n{5}",
+                                _projectRootElement.FullPath,
+                                _data.GlobalPropertiesDictionary.Count,
+                                _data.Toolset.ToolsVersion,
+                                _projectRootElement.Count,
+                                hash,
+                                propertyDump);
 
                             Trace.WriteLine(line + output + line);
                         }
@@ -1177,35 +1185,33 @@ namespace Microsoft.Build.Evaluation
         /// <summary>
         /// Set the built-in properties, most of which are read-only 
         /// </summary>
-        private ICollection<P> AddBuiltInProperties()
+        private void AddBuiltInProperties()
         {
             string startupDirectory = BuildParameters.StartupDirectory;
 
-            List<P> builtInProperties = new List<P>(19);
-
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.toolsVersion, _data.Toolset.ToolsVersion));
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.toolsPath, _data.Toolset.ToolsPath));
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.binPath, _data.Toolset.ToolsPath));
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.startupDirectory, startupDirectory));
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.buildNodeCount, _maxNodeCount.ToString(CultureInfo.CurrentCulture)));
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.programFiles32, FrameworkLocationHelper.programFiles32));
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.assemblyVersion, Constants.AssemblyVersion));
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.version, MSBuildAssemblyFileVersion.Instance.MajorMinorBuild));
+            SetBuiltInProperty(ReservedPropertyNames.toolsVersion, _data.Toolset.ToolsVersion);
+            SetBuiltInProperty(ReservedPropertyNames.toolsPath, _data.Toolset.ToolsPath);
+            SetBuiltInProperty(ReservedPropertyNames.binPath, _data.Toolset.ToolsPath);
+            SetBuiltInProperty(ReservedPropertyNames.startupDirectory, startupDirectory);
+            SetBuiltInProperty(ReservedPropertyNames.buildNodeCount, _maxNodeCount.ToString(CultureInfo.CurrentCulture));
+            SetBuiltInProperty(ReservedPropertyNames.programFiles32, FrameworkLocationHelper.programFiles32);
+            SetBuiltInProperty(ReservedPropertyNames.assemblyVersion, Constants.AssemblyVersion);
+            SetBuiltInProperty(ReservedPropertyNames.version, MSBuildAssemblyFileVersion.Instance.MajorMinorBuild);
 
             // Fake OS env variables when not on Windows
             if (!NativeMethodsShared.IsWindows)
             {
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.osName, NativeMethodsShared.OSName));
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.frameworkToolsRoot, NativeMethodsShared.FrameworkBasePath));
+                SetBuiltInProperty(ReservedPropertyNames.osName, NativeMethodsShared.OSName);
+                SetBuiltInProperty(ReservedPropertyNames.frameworkToolsRoot, NativeMethodsShared.FrameworkBasePath);
             }
 
 #if RUNTIME_TYPE_NETCORE
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.msbuildRuntimeType, "Core"));
+            SetBuiltInProperty(ReservedPropertyNames.msbuildRuntimeType, "Core");
 #elif MONO
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.msbuildRuntimeType,
-                                                        NativeMethodsShared.IsMono ? "Mono" : "Full"));
+            SetBuiltInProperty(ReservedPropertyNames.msbuildRuntimeType,
+                                                        NativeMethodsShared.IsMono ? "Mono" : "Full");
 #else
-            builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.msbuildRuntimeType, "Full"));
+            SetBuiltInProperty(ReservedPropertyNames.msbuildRuntimeType, "Full");
 #endif
 
             if (String.IsNullOrEmpty(_projectRootElement.FullPath))
@@ -1213,13 +1219,13 @@ namespace Microsoft.Build.Evaluation
                 // If this is an un-saved project, this is as far as we can go
                 if (String.IsNullOrEmpty(_projectRootElement.DirectoryPath))
                 {
-                    builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectDirectory, startupDirectory));
+                    SetBuiltInProperty(ReservedPropertyNames.projectDirectory, startupDirectory);
                 }
                 else
                 {
                     // Solution files based on the old OM end up here.  But they do have a location, which is where the solution was loaded from.
                     // We need to set this here otherwise we can't locate any projects the solution refers to.
-                    builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectDirectory, _projectRootElement.DirectoryPath));
+                    SetBuiltInProperty(ReservedPropertyNames.projectDirectory, _projectRootElement.DirectoryPath);
                 }
             }
             else
@@ -1239,44 +1245,34 @@ namespace Microsoft.Build.Evaluation
                 projectDirectoryNoRoot = EscapingUtilities.Escape(FileUtilities.EnsureNoLeadingSlash(projectDirectoryNoRoot));
 
                 // ReservedPropertyNames.projectDefaultTargets is already set
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectFile, projectFile));
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectName, projectFileWithoutExtension));
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectExtension, projectExtension));
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectFullPath, projectFullPath));
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectDirectory, projectDirectory));
-                builtInProperties.Add(SetBuiltInProperty(ReservedPropertyNames.projectDirectoryNoRoot, projectDirectoryNoRoot));
+                SetBuiltInProperty(ReservedPropertyNames.projectFile, projectFile);
+                SetBuiltInProperty(ReservedPropertyNames.projectName, projectFileWithoutExtension);
+                SetBuiltInProperty(ReservedPropertyNames.projectExtension, projectExtension);
+                SetBuiltInProperty(ReservedPropertyNames.projectFullPath, projectFullPath);
+                SetBuiltInProperty(ReservedPropertyNames.projectDirectory, projectDirectory);
+                SetBuiltInProperty(ReservedPropertyNames.projectDirectoryNoRoot, projectDirectoryNoRoot);
             }
-
-            return builtInProperties;
         }
 
         /// <summary>
         /// Pull in all the environment into our property bag
         /// </summary>
-        private ICollection<P> AddEnvironmentProperties()
+        private void AddEnvironmentProperties()
         {
-            List<P> environmentPropertiesList = new List<P>(_environmentProperties.Count);
-
             foreach (ProjectPropertyInstance environmentProperty in _environmentProperties)
             {
-                P property = _data.SetProperty(environmentProperty.Name, ((IProperty)environmentProperty).EvaluatedValueEscaped, isGlobalProperty: false, mayBeReserved: false, isEnvironmentVariable: true);
-                environmentPropertiesList.Add(property);
+                _data.SetProperty(environmentProperty.Name, ((IProperty)environmentProperty).EvaluatedValueEscaped, isGlobalProperty: false, mayBeReserved: false, isEnvironmentVariable: true);
             }
-
-            return environmentPropertiesList;
         }
 
         /// <summary>
         /// Put all the toolset's properties into our property bag
         /// </summary>
-        private ICollection<P> AddToolsetProperties()
+        private void AddToolsetProperties()
         {
-            List<P> toolsetProperties = new List<P>(_data.Toolset.Properties.Count);
-
             foreach (ProjectPropertyInstance toolsetProperty in _data.Toolset.Properties.Values)
             {
-                P property = _data.SetProperty(toolsetProperty.Name, ((IProperty)toolsetProperty).EvaluatedValueEscaped, false /* NOT global property */, false /* may NOT be a reserved name */);
-                toolsetProperties.Add(property);
+                _data.SetProperty(toolsetProperty.Name, ((IProperty)toolsetProperty).EvaluatedValueEscaped, false /* NOT global property */, false /* may NOT be a reserved name */);
             }
 
             if (_data.SubToolsetVersion == null)
@@ -1285,8 +1281,7 @@ namespace Microsoft.Build.Evaluation
                 // is most likely not a subtoolset now, we need to add VisualStudioVersion if its not already a property.
                 if (!_data.Properties.Contains(Constants.VisualStudioVersionPropertyName))
                 {
-                    P subToolsetVersionProperty = _data.SetProperty(Constants.VisualStudioVersionPropertyName, MSBuildConstants.CurrentVisualStudioVersion, false /* NOT global property */, false /* may NOT be a reserved name */);
-                    toolsetProperties.Add(subToolsetVersionProperty);
+                    _data.SetProperty(Constants.VisualStudioVersionPropertyName, MSBuildConstants.CurrentVisualStudioVersion, false /* NOT global property */, false /* may NOT be a reserved name */);
                 }
             }
             else
@@ -1298,42 +1293,33 @@ namespace Microsoft.Build.Evaluation
                 // set the property even if there is no matching sub-toolset.  
                 if (!_data.Properties.Contains(Constants.SubToolsetVersionPropertyName))
                 {
-                    P subToolsetVersionProperty = _data.SetProperty(Constants.SubToolsetVersionPropertyName, _data.SubToolsetVersion, false /* NOT global property */, false /* may NOT be a reserved name */);
-                    toolsetProperties.Add(subToolsetVersionProperty);
+                    _data.SetProperty(Constants.SubToolsetVersionPropertyName, _data.SubToolsetVersion, false /* NOT global property */, false /* may NOT be a reserved name */);
                 }
 
                 if (_data.Toolset.SubToolsets.TryGetValue(_data.SubToolsetVersion, out subToolset))
                 {
                     foreach (ProjectPropertyInstance subToolsetProperty in subToolset.Properties.Values)
                     {
-                        P property = _data.SetProperty(subToolsetProperty.Name, ((IProperty)subToolsetProperty).EvaluatedValueEscaped, false /* NOT global property */, false /* may NOT be a reserved name */);
-                        toolsetProperties.Add(property);
+                        _data.SetProperty(subToolsetProperty.Name, ((IProperty)subToolsetProperty).EvaluatedValueEscaped, false /* NOT global property */, false /* may NOT be a reserved name */);
                     }
                 }
             }
-
-            return toolsetProperties;
         }
 
         /// <summary>
         /// Put all the global properties into our property bag
         /// </summary>
-        private ICollection<P> AddGlobalProperties()
+        private void AddGlobalProperties()
         {
             if (_data.GlobalPropertiesDictionary == null)
             {
-                return Array.Empty<P>();
+                return;
             }
-
-            List<P> globalProperties = new List<P>(_data.GlobalPropertiesDictionary.Count);
 
             foreach (ProjectPropertyInstance globalProperty in _data.GlobalPropertiesDictionary)
             {
-                P property = _data.SetProperty(globalProperty.Name, ((IProperty)globalProperty).EvaluatedValueEscaped, true /* IS global property */, false /* may NOT be a reserved name */);
-                globalProperties.Add(property);
+                _data.SetProperty(globalProperty.Name, ((IProperty)globalProperty).EvaluatedValueEscaped, true /* IS global property */, false /* may NOT be a reserved name */);
             }
-
-            return globalProperties;
         }
 
         /// <summary>
@@ -2050,8 +2036,25 @@ namespace Microsoft.Build.Evaluation
                 if (solutionPath == "*Undefined*") solutionPath = null;
                 var projectPath = _data.GetProperty(ReservedPropertyNames.projectFullPath)?.EvaluatedValue;
 
+                // This is a static property, but accessing like this should be fine because:
+                //    1. These evaluations aren't done concurrently.
+                //    2. Global properties are constant for this process.
+                // This is a one-time penalty to generate the dictionary.
+                if (_globalPropertiesForSdkResolution == null)
+                {
+                    _globalPropertiesForSdkResolution = _data.GlobalPropertiesDictionary.ToDictionary();
+                }
+
                 // Combine SDK path with the "project" relative path
-                sdkResult = _sdkResolverService.ResolveSdk(_submissionId, importElement.ParsedSdkReference, _evaluationLoggingContext, importElement.Location, solutionPath, projectPath, _interactive);
+                sdkResult = _sdkResolverService.ResolveSdk(
+                    _submissionId,
+                    importElement.ParsedSdkReference,
+                    _evaluationLoggingContext,
+                    importElement.Location,
+                    solutionPath,
+                    projectPath,
+                    _interactive,
+                    _globalPropertiesForSdkResolution);
 
                 if (!sdkResult.Success)
                 {
@@ -2078,6 +2081,16 @@ namespace Microsoft.Build.Evaluation
                     }
 
                     ProjectErrorUtilities.ThrowInvalidProject(importElement.SdkLocation, "CouldNotResolveSdk", importElement.ParsedSdkReference.ToString());
+                }
+
+                if (!sdkResult.TrackEnvironmentVariables)
+                {
+                    var args = new SdkResolverDoesNotTrackEnvironmentVariablesEventArgs(
+                        importElement.ParsedSdkReference.Name,
+                        ResourceUtilities.FormatResourceStringIgnoreCodeAndKeyword("SdkResolverIsNotTrackingEnvironmentVariableUsage", importElement.ParsedSdkReference.Name));
+                    args.BuildEventContext = _evaluationLoggingContext.BuildEventContext;
+
+                    _evaluationLoggingContext.LogBuildEvent(args);
                 }
 
                 project = Path.Combine(sdkResult.Path, project);

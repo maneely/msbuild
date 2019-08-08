@@ -457,7 +457,7 @@ namespace Microsoft.Build.UnitTests
         }
 
         [Fact]
-        public void UninitializedPropertyReadEventArgs()
+        public void RoundTripUninitializedPropertyReadEventArgs()
         {
             var args = new UninitializedPropertyReadEventArgs(
                 propertyName: Guid.NewGuid().ToString(),
@@ -473,7 +473,7 @@ namespace Microsoft.Build.UnitTests
         }
 
         [Fact]
-        public void PropertyInitialValueEventArgs()
+        public void RoundTripPropertyInitialValueEventArgs()
         {
             var args = new PropertyInitialValueSetEventArgs(
                 propertyName: Guid.NewGuid().ToString(),
@@ -491,6 +491,23 @@ namespace Microsoft.Build.UnitTests
                 e => e.HelpKeyword,
                 e => e.SenderName);
         }
+
+        [Fact]
+        public void RoundTripSdkResolverDoesNotTrackEnvironmentVariablesEventArgs()
+        {
+            var args = new SdkResolverDoesNotTrackEnvironmentVariablesEventArgs(
+                sdkResolverName: Guid.NewGuid().ToString(),
+                message: Guid.NewGuid().ToString(),
+                helpKeyword: Guid.NewGuid().ToString(),
+                senderName: Guid.NewGuid().ToString());
+
+            Roundtrip(args,
+                e => e.SdkResolverName,
+                e => e.Message,
+                e => e.HelpKeyword,
+                e => e.SenderName);
+        }
+
         [Fact]
         public void ReadingCorruptedStreamThrows()
         {

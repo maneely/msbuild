@@ -124,6 +124,9 @@ namespace Microsoft.Build.Logging
                 case BinaryLogRecordKind.PropertyInitialValueSet:
                     result = ReadPropertyInitialValueSetEventArgs();
                     break;
+                case BinaryLogRecordKind.SdkResolverDoesNotTrackEnvironmentVariables:
+                    result = ReadSdkResolverDoesNotTrackEnvironmentVariablesEventArgs();
+                    break;
                 default:
                     break;
             }
@@ -590,6 +593,23 @@ namespace Microsoft.Build.Logging
                 propertyName,
                 propertyValue,
                 propertySource,
+                fields.Message,
+                fields.HelpKeyword,
+                fields.SenderName,
+                importance);
+            SetCommonFields(e, fields);
+
+            return e;
+        }
+
+        private BuildEventArgs ReadSdkResolverDoesNotTrackEnvironmentVariablesEventArgs()
+        {
+            var fields = ReadBuildEventArgsFields();
+            var importance = (MessageImportance)ReadInt32();
+            string sdkResolverName = ReadString();
+
+            var e = new SdkResolverDoesNotTrackEnvironmentVariablesEventArgs(
+                sdkResolverName,
                 fields.Message,
                 fields.HelpKeyword,
                 fields.SenderName,

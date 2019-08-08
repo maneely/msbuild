@@ -102,7 +102,7 @@ namespace Microsoft.Build.UnitTests.OM.Construction
 
             IList<ProjectElement> children = project.GetLogicalProject().ToList();
 
-            // <Sdk> style will have an extra ProjectElment.
+            // <Sdk> style will have an extra ProjectElement.
             Assert.Equal(expectImportInLogicalProject ? 7 : 6, children.Count);
         }
 
@@ -531,6 +531,37 @@ namespace Microsoft.Build.UnitTests.OM.Construction
 
                 import.SdkResult.Path.ShouldBe(Path.GetDirectoryName(expectedSdkPath));
                 import.SdkResult.Version.ShouldBeEmpty();
+            }
+        }
+
+        [Fact]
+        public void SdkResolvedImportsTrackEnvironmentVariables()
+        {
+            _env.SetEnvironmentVariable("MSBuildSDKsPath", _testSdkRoot);
+            File.WriteAllText(_sdkPropsPath, _sdkPropsContent);
+            File.WriteAllText(_sdkTargetsPath, _sdkTargetsContent);
+            string projectContents = string.Format(ProjectTemplateSdkAsAttributeWithVersion, SdkName, _projectInnerContents, "1.0.0");
+
+            MockLogger logger = new MockLogger();
+            var project = Project.FromXmlReader(XmlReader.Create(
+                new StringReader(projectContents)),
+                new ProjectOptions()
+                    {
+                        ProjectCollection = new ProjectCollection(
+                            null,
+                            loggers: new ILogger[] { logger }, ToolsetDefinitionLocations.Default)
+                    });
+
+            project.Imports.Count.ShouldBe(2);
+            var imports = project.Imports;
+
+            for (var i = 0; i < 2; i++)
+            {
+                var import = imports[i];
+                bool trackedEnvVars = import.SdkResult.TrackEnvironmentVariables;
+
+                // This should always be true because it uses the DefaultSdkResolver which was updated to always return true.
+                trackedEnvVars.ShouldBeTrue(); 
             }
         }
 

@@ -36,5 +36,10 @@ namespace Microsoft.Build.Framework
         ///     The Sdk reference
         /// </summary>
         public virtual SdkReference SdkReference { get; protected set; }
+
+        /// <summary>
+        ///     Indicates that the resolver knows that environment variables are tracked. All new resolvers should set this to true.
+        /// </summary>
+        public virtual bool TrackEnvironmentVariables { get; set; }
     }
 }

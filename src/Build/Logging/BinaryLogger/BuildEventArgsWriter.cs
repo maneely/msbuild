@@ -322,6 +322,12 @@ namespace Microsoft.Build.Logging
                 return;
             }
 
+            if (e is SdkResolverDoesNotTrackEnvironmentVariablesEventArgs)
+            {
+                Write((SdkResolverDoesNotTrackEnvironmentVariablesEventArgs)e);
+                return;
+            }
+
             Write(BinaryLogRecordKind.Message);
             WriteMessageFields(e);
         }
@@ -382,6 +388,13 @@ namespace Microsoft.Build.Logging
             Write(BinaryLogRecordKind.EnvironmentVariableRead);
             WriteMessageFields(e);
             Write(e.EnvironmentVariableName);
+        }
+
+        private void Write(SdkResolverDoesNotTrackEnvironmentVariablesEventArgs e)
+        {
+            Write(BinaryLogRecordKind.SdkResolverDoesNotTrackEnvironmentVariables);
+            WriteMessageFields(e);
+            Write(e.SdkResolverName);
         }
 
         private void Write(TaskCommandLineEventArgs e)

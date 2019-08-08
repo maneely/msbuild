@@ -29,12 +29,21 @@ namespace Microsoft.Build.BackEnd.SdkResolution
 
         public override SdkResultBase Resolve(SdkReference sdk, SdkResolverContextBase context, SdkResultFactoryBase factory)
         {
-            var sdkPath = Path.Combine(BuildEnvironmentHelper.Instance.MSBuildSDKsPath, sdk.Name, "Sdk");
+            string sdksPath = context.GetEnvironmentVariableValue("MSBuildSDKsPath");
+
+            if (string.IsNullOrEmpty(sdksPath))
+                sdksPath = BuildEnvironmentHelper.Instance.MSBuildSDKsPath;
+
+            var sdkPath = Path.Combine(sdksPath, sdk.Name, "Sdk");
 
             // Note: On failure MSBuild will log a generic message, no need to indicate a failure reason here.
-            return FileUtilities.DirectoryExistsNoThrow(sdkPath)
+            var result = FileUtilities.DirectoryExistsNoThrow(sdkPath)
                 ? factory.IndicateSuccess(sdkPath, string.Empty)
                 : factory.IndicateFailure(null);
+
+            result.TrackEnvironmentVariables = true;
+
+            return result;
         }
     }
 }

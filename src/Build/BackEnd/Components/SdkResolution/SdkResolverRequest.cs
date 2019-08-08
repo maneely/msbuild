@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Framework;
 
@@ -21,13 +23,14 @@ namespace Microsoft.Build.BackEnd.SdkResolution
         private int _submissionId;
         private string _version;
         private bool _interactive;
+        private IDictionary<string, string> _globalProperties;
 
         public SdkResolverRequest(ITranslator translator)
         {
             Translate(translator);
         }
 
-        private SdkResolverRequest(int submissionId, string name, string version, string minimumVersion, BuildEventContext buildEventContext, ElementLocation elementLocation, string solutionPath, string projectPath, bool interactive)
+        private SdkResolverRequest(int submissionId, string name, string version, string minimumVersion, BuildEventContext buildEventContext, ElementLocation elementLocation, string solutionPath, string projectPath, bool interactive, IDictionary<string, string> globalProperties)
         {
             _buildEventContext = buildEventContext;
             _submissionId = submissionId;
@@ -38,11 +41,14 @@ namespace Microsoft.Build.BackEnd.SdkResolution
             _solutionPath = solutionPath;
             _version = version;
             _interactive = interactive;
+            _globalProperties = globalProperties;
         }
 
         public BuildEventContext BuildEventContext => _buildEventContext;
 
         public ElementLocation ElementLocation => _elementLocation;
+
+        public IDictionary<string, string> GlobalProperties => _globalProperties;
 
         public bool Interactive => _interactive;
 
@@ -62,9 +68,9 @@ namespace Microsoft.Build.BackEnd.SdkResolution
 
         public string Version => _version;
 
-        public static SdkResolverRequest Create(int submissionId, SdkReference sdkReference, BuildEventContext buildEventContext, ElementLocation elementLocation, string solutionPath, string projectPath, bool interactive)
+        public static SdkResolverRequest Create(int submissionId, SdkReference sdkReference, BuildEventContext buildEventContext, ElementLocation elementLocation, string solutionPath, string projectPath, bool interactive, IDictionary<string, string> globalProperties)
         {
-            return new SdkResolverRequest(submissionId, sdkReference.Name, sdkReference.Version, sdkReference.MinimumVersion, buildEventContext, elementLocation, solutionPath, projectPath, interactive);
+            return new SdkResolverRequest(submissionId, sdkReference.Name, sdkReference.Version, sdkReference.MinimumVersion, buildEventContext, elementLocation, solutionPath, projectPath, interactive, globalProperties);
         }
 
         public static INodePacket FactoryForDeserialization(ITranslator translator)
@@ -83,6 +89,7 @@ namespace Microsoft.Build.BackEnd.SdkResolution
             translator.Translate(ref _submissionId);
             translator.Translate(ref _version);
             translator.Translate(ref _interactive);
+            translator.TranslateDictionary(ref _globalProperties, count => new Dictionary<string, string>(count, StringComparer.OrdinalIgnoreCase));
         }
     }
 }

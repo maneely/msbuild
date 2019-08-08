@@ -44,5 +44,9 @@ namespace Microsoft.Build.Framework
         ///     This property is not thread-safe.
         /// </summary>
         public virtual object State { get; set; }
+
+        public virtual string GetGlobalPropertyValue(string name) => string.Empty;
+
+        public virtual string GetEnvironmentVariableValue(string name) => string.Empty;
     }
 }
