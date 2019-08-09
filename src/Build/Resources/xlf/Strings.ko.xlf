@@ -118,11 +118,6 @@
         <target state="new">Property initial value: $({0})="{1}" Source: {2}</target>
         <note />
       </trans-unit>
-      <trans-unit id="SdkResolverIsNotTrackingEnvironmentVariableUsage">
-        <source>Resolver for sdk "{0}" isn't tracking environment variable usage.</source>
-        <target state="new">Resolver for sdk "{0}" isn't tracking environment variable usage.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SkippedConstraintsOnRequest">
         <source>MSB4260: Project "{0}" skipped graph isolation constraints on referenced project "{1}"</source>
         <target state="translated">MSB4260: 프로젝트 "{0}"에서 참조된 프로젝트 "{1}"의 그래프 격리 제약 조건을 건너뛰었습니다.</target>
