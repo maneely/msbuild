@@ -42,7 +42,8 @@ namespace Microsoft.Build.BackEnd.SdkResolution
 
         public override string GetEnvironmentVariableValue(string name)
         {
-            if (Traits.Instance.LogPropertyTracking)
+            Traits.PropertyTrackingSetting settings = (Traits.PropertyTrackingSetting)Traits.Instance.LogPropertyTracking;
+            if ((settings & Traits.PropertyTrackingSetting.EnvironmentVariableRead) == Traits.PropertyTrackingSetting.EnvironmentVariableRead)
             {
                 // Log this usage.
                 var args = new EnvironmentVariableReadEventArgs(

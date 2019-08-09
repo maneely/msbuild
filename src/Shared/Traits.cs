@@ -90,6 +90,19 @@ namespace Microsoft.Build.Utilities
                 ? result
                 : defaultValue;
         }
+
+        [Flags]
+        public enum PropertyTrackingSetting
+        {
+            None = 0,
+
+            PropertyReassignment = 1,
+            PropertyInitialValueSet = 1 << 1,
+            EnvironmentVariableRead = 1 << 2,
+            UninitializedPropertyRead = 1 << 3,
+
+            All = PropertyReassignment | PropertyInitialValueSet | EnvironmentVariableRead | UninitializedPropertyRead
+        }
     }
 
     internal class EscapeHatches

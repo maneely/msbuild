@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using Microsoft.Build.BackEnd.Components.Logging;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Shared;
+using Microsoft.Build.Utilities;
 using SdkResult = Microsoft.Build.BackEnd.SdkResolution.SdkResult;
 
 namespace Microsoft.Build.Evaluation
@@ -31,7 +32,7 @@ namespace Microsoft.Build.Evaluation
         private readonly IEvaluatorData<P, I, M, D> _wrapped;
         private readonly HashSet<string> _overwrittenEnvironmentVariables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly EvaluationLoggingContext _evaluationLoggingContext;
-        private readonly PropertyTrackingSetting _settings;
+        private readonly Traits.PropertyTrackingSetting _settings;
 
         /// <summary>
         /// Creates an instance of the PropertyTrackingEvaluatorDataWrapper class.
@@ -45,7 +46,7 @@ namespace Microsoft.Build.Evaluation
 
             _wrapped = dataToWrap;
             _evaluationLoggingContext = evaluationLoggingContext;
-            _settings = (PropertyTrackingSetting)settingValue;
+            _settings = (Traits.PropertyTrackingSetting)settingValue;
         }
 
         #region IEvaluatorData<> members with tracking-related code in them.
@@ -182,7 +183,7 @@ namespace Microsoft.Build.Evaluation
         /// <param name="name">The name of the environment variable read.</param>
         private void TrackEnvironmentVariableRead(string name)
         {
-            if ((_settings & PropertyTrackingSetting.EnvironmentVariableRead) != PropertyTrackingSetting.EnvironmentVariableRead) return;
+            if ((_settings & Traits.PropertyTrackingSetting.EnvironmentVariableRead) != Traits.PropertyTrackingSetting.EnvironmentVariableRead) return;
 
             var args = new EnvironmentVariableReadEventArgs(
                 name,
@@ -198,7 +199,7 @@ namespace Microsoft.Build.Evaluation
         /// <param name="name">The name of the uninitialized property read.</param>
         private void TrackUninitializedPropertyRead(string name)
         {
-            if ((_settings & PropertyTrackingSetting.UninitializedPropertyRead) != PropertyTrackingSetting.UninitializedPropertyRead) return;
+            if ((_settings & Traits.PropertyTrackingSetting.UninitializedPropertyRead) != Traits.PropertyTrackingSetting.UninitializedPropertyRead) return;
 
             var args = new UninitializedPropertyReadEventArgs(
                 name,
@@ -237,7 +238,7 @@ namespace Microsoft.Build.Evaluation
         /// <param name="source">The source of the property.</param>
         private void TrackPropertyInitialValueSet(P property, PropertySource source)
         {
-            if ((_settings & PropertyTrackingSetting.PropertyInitialValueSet) != PropertyTrackingSetting.PropertyInitialValueSet) return;
+            if ((_settings & Traits.PropertyTrackingSetting.PropertyInitialValueSet) != Traits.PropertyTrackingSetting.PropertyInitialValueSet) return;
 
             var args = new PropertyInitialValueSetEventArgs(
                     property.Name,
@@ -258,7 +259,7 @@ namespace Microsoft.Build.Evaluation
         /// <param name="location">The location of this property's reassignment.</param>
         private void TrackPropertyReassignment(P predecessor, P property, string location)
         {
-            if ((_settings & PropertyTrackingSetting.PropertyReassignment) != PropertyTrackingSetting.PropertyReassignment) return;
+            if ((_settings & Traits.PropertyTrackingSetting.PropertyReassignment) != Traits.PropertyTrackingSetting.PropertyReassignment) return;
 
             string newValue = property.EvaluatedValue;
             string oldValue = predecessor.EvaluatedValue;
@@ -305,19 +306,6 @@ namespace Microsoft.Build.Evaluation
             Global,
             Toolset,
             EnvironmentVariable
-        }
-
-        [Flags]
-        private enum PropertyTrackingSetting
-        {
-            None = 0,
-
-            PropertyReassignment = 1,
-            PropertyInitialValueSet = 1 << 1,
-            EnvironmentVariableRead = 1 << 2,
-            UninitializedPropertyRead = 1 << 3,
-
-            All = PropertyReassignment | PropertyInitialValueSet | EnvironmentVariableRead | UninitializedPropertyRead
         }
     }
 }
